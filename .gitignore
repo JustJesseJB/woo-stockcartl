@@ -1,0 +1,68 @@
+# WordPress Plugin .gitignore
+
+# WordPress core files (if developing in full WP install)
+/wp-admin/
+/wp-includes/
+/wp-content/themes/
+/wp-content/plugins/*/
+!/wp-content/plugins/stockcartl/
+wp-config.php
+wp-config-sample.php
+.htaccess
+
+# Database
+*.sql
+*.sqlite
+
+# Logs
+*.log
+error_log
+debug.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Composer
+/vendor/
+composer.lock
+
+# Build files
+/dist/
+/build/
+*.min.js
+*.min.css
+
+# Temporary files
+*.tmp
+*.temp
+.sass-cache/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Plugin-specific
+/stockcartl/*.zip
+/releases/
