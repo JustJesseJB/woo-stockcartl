@@ -1,0 +1,249 @@
+/**
+ * StockCartl Admin Styles
+ */
+
+/* Dashboard */
+.stockcartl-dashboard-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.stockcartl-logo {
+    margin-right: 20px;
+}
+
+.stockcartl-logo img {
+    max-height: 50px;
+}
+
+.stockcartl-version {
+    color: #999;
+    font-style: italic;
+}
+
+.stockcartl-dashboard-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.stockcartl-card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+    margin-bottom: 20px;
+    flex: 1;
+    min-width: 250px;
+}
+
+.stockcartl-card-header {
+    border-bottom: 1px solid #eee;
+    padding: 10px 15px;
+}
+
+.stockcartl-card-header h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.stockcartl-card-content {
+    padding: 15px;
+}
+
+.stockcartl-stat {
+    text-align: center;
+    padding: 10px;
+    display: inline-block;
+    margin-right: 20px;
+}
+
+.stockcartl-stat-number {
+    display: block;
+    font-size: 24px;
+    font-weight: 600;
+    color: #d4af37; /* Gold */
+    margin-bottom: 5px;
+}
+
+.stockcartl-stat-label {
+    display: block;
+    font-size: 14px;
+    color: #666;
+}
+
+.stockcartl-dashboard-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -10px;
+}
+
+.stockcartl-dashboard-col {
+    flex: 1;
+    min-width: 48%;
+    padding: 0 10px;
+}
+
+.stockcartl-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.stockcartl-table th,
+.stockcartl-table td {
+    padding: 8px 10px;
+    text-align: left;
+}
+
+/* Waitlist Tables */
+.stockcartl-waitlist-entries {
+    margin-top: 15px;
+}
+
+.stockcartl-filters {
+    margin: 20px 0;
+    background: #fff;
+    padding: 10px 15px;
+    border: 1px solid #e5e5e5;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+
+.stockcartl-filters select {
+    margin-right: 10px;
+}
+
+.stockcartl-export-button {
+    float: right;
+}
+
+.stockcartl-waitlist-table-wrap {
+    margin-top: 20px;
+}
+
+.stockcartl-waitlist-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.stockcartl-waitlist-table th,
+.stockcartl-waitlist-table td {
+    padding: 8px 10px;
+    text-align: left;
+}
+
+.stockcartl-export-link {
+    margin-top: 15px;
+}
+
+.stockcartl-loading {
+    padding: 10px;
+    font-style: italic;
+    color: #666;
+}
+
+.stockcartl-error {
+    color: #dc3232;
+    padding: 10px;
+}
+
+.stockcartl-no-entries {
+    background: #fff;
+    padding: 20px;
+    text-align: center;
+    border: 1px solid #e5e5e5;
+}
+
+/* Status and Type Badges */
+.stockcartl-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.stockcartl-badge-active {
+    background-color: #46b450;
+    color: #fff;
+}
+
+.stockcartl-badge-inactive {
+    background-color: #f0f0f0;
+    color: #666;
+}
+
+.stockcartl-type-badge,
+.stockcartl-status-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.stockcartl-type-deposit {
+    background-color: #d4af37; /* Gold */
+    color: #fff;
+}
+
+.stockcartl-type-free,
+.stockcartl-type-deposit_pending {
+    background-color: #f0f0f0;
+    color: #666;
+}
+
+.stockcartl-status-active {
+    background-color: #46b450;
+    color: #fff;
+}
+
+.stockcartl-status-notified {
+    background-color: #4a90e2; /* Electric Blue */
+    color: #fff;
+}
+
+.stockcartl-status-expired {
+    background-color: #dc3232;
+    color: #fff;
+}
+
+/* Settings Page */
+.stockcartl-settings-wrap {
+    max-width: 800px;
+}
+
+.form-table th {
+    width: 200px;
+}
+
+.stockcartl-field-desc {
+    color: #666;
+    font-style: italic;
+    margin-top: 5px;
+}
+
+/* Pagination */
+.stockcartl-pagination {
+    margin-top: 20px;
+    text-align: center;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .stockcartl-dashboard-col {
+        min-width: 100%;
+    }
+    
+    .stockcartl-filters select,
+    .stockcartl-filters button {
+        margin-bottom: 10px;
+    }
+    
+    .stockcartl-export-button {
+        float: none;
+        margin-top: 10px;
+        display: inline-block;
+    }
+}

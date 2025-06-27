@@ -11,10 +11,10 @@
  * Plugin Name:       StockCartl
  * Plugin URI:        https://stockcartl.com
  * Description:       Transform "Out of Stock" into revenue opportunities with intelligent waitlist management, deposit priority systems, and social proof features.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 5.0
  * Requires PHP:      7.4
- * Author:            Ambition Plugins
+ * Author:            Amplified Plugins
  * Author URI:        https://amplifiedplugins.com
  * Text Domain:       stockcartl
  * Domain Path:       /languages
@@ -30,10 +30,11 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('STOCKCARTL_VERSION', '1.0.0');
+define('STOCKCARTL_VERSION', '1.1.0');
 define('STOCKCARTL_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('STOCKCARTL_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('STOCKCARTL_PLUGIN_BASENAME', plugin_basename(__FILE__));
+define('STOCKCARTL_PLUGIN_FILE', __FILE__); // Added for HPOS compatibility
 define('STOCKCARTL_TABLE_WAITLIST', 'stockcartl_waitlist');
 define('STOCKCARTL_TABLE_SETTINGS', 'stockcartl_settings');
 define('STOCKCARTL_TABLE_ANALYTICS', 'stockcartl_analytics');

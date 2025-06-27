@@ -12,6 +12,7 @@ Transform "Out of Stock" into opportunity with intelligent waitlist management a
 - ✅ Guest-to-customer account conversion
 - ✅ Admin dashboard for waitlist management
 - ✅ CSV export functionality
+- ✅ WooCommerce HPOS (Custom Order Tables) compatibility
 
 ### Pro Version (Coming Soon)
 - 🔥 SMS notifications
@@ -60,7 +61,12 @@ stockcartl/
 
 ## 📝 Changelog
 
-### v1.0.0 (In Development)
+### v1.1.0 (June 26, 2025)
+- Added: Compatibility with WooCommerce High-Performance Order Storage (HPOS/Custom Order Tables)
+- Added: Declared official support for the latest WooCommerce version
+- Improved: Order management now uses WooCommerce's CRUD API for better performance and compatibility
+
+### v1.0.0 (Initial Release)
 - Initial release
 - Core waitlist functionality
 - Deposit priority system
