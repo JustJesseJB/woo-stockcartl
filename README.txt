@@ -4,7 +4,7 @@ Tags: woocommerce, waitlist, stock, inventory, out-of-stock, deposits, preorder
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: Proprietary
 License URI: https://stockcartl.com/license
 
@@ -26,6 +26,7 @@ StockCartl is a powerful WooCommerce extension that helps you convert out-of-sto
 * **Admin Dashboard** - Comprehensive waitlist management with analytics
 * **CSV Export** - Export waitlist data for external processing
 * **WooCommerce HPOS Compatible** - Full support for High-Performance Order Storage / Custom Order Tables
+* **Variable Products Support** - Seamless waitlist functionality for out-of-stock variations
 
 ### Pro Version (Coming Soon)
 
@@ -35,6 +36,8 @@ StockCartl is a powerful WooCommerce extension that helps you convert out-of-sto
 * AI-powered demand forecasting
 * Custom compensation rules
 * Cross-platform support
+* Comprehensive debugging system
+* Conflict detection with other plugins
 
 == Installation ==
 
@@ -70,6 +73,11 @@ Yes! As of version 1.1.0, StockCartl is fully compatible with WooCommerce's High
 
 == Changelog ==
 
+= 1.1.1 - June 27, 2025 =
+* Fixed: Variable product waitlist functionality for out-of-stock variations
+* Improved: Pre-generation of waitlist forms for better performance
+* Enhanced: Form submission handling for variable products
+
 = 1.1.0 - June 26, 2025 =
 * Added: Compatibility with WooCommerce High-Performance Order Storage (HPOS/Custom Order Tables)
 * Added: Declared official support for the latest WooCommerce version
@@ -83,6 +91,9 @@ Yes! As of version 1.1.0, StockCartl is fully compatible with WooCommerce's High
 * Admin dashboard
 
 == Upgrade Notice ==
+
+= 1.1.1 =
+Important fix for variable product waitlists. This update ensures that waitlist forms appear correctly for out-of-stock variations and improves the submission process.
 
 = 1.1.0 =
 Important update for WooCommerce compatibility. This version adds support for WooCommerce High-Performance Order Storage (HPOS/Custom Order Tables) and improves overall plugin performance.

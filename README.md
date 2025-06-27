@@ -13,6 +13,7 @@ Transform "Out of Stock" into opportunity with intelligent waitlist management a
 - ✅ Admin dashboard for waitlist management
 - ✅ CSV export functionality
 - ✅ WooCommerce HPOS (Custom Order Tables) compatibility
+- ✅ Full support for variable products with out-of-stock variations
 
 ### Pro Version (Coming Soon)
 - 🔥 SMS notifications
@@ -21,6 +22,8 @@ Transform "Out of Stock" into opportunity with intelligent waitlist management a
 - 🔥 AI-powered demand forecasting
 - 🔥 Custom compensation rules
 - 🔥 Cross-platform support
+- 🔥 Comprehensive debugging system
+- 🔥 Conflict detection with other plugins
 
 ## 🛠️ Development Setup
 
@@ -36,7 +39,6 @@ Transform "Out of Stock" into opportunity with intelligent waitlist management a
 4. Install WooCommerce if not already installed
 
 ### Project Structure
-```
 stockcartl/
 ├── stockcartl.php              # Main plugin file
 ├── uninstall.php               # Cleanup on uninstall
@@ -50,7 +52,6 @@ stockcartl/
 ├── assets/                     # CSS/JS files
 ├── templates/                  # Form and email templates
 └── languages/                  # Translation files
-```
 
 ## 🎨 Brand Colors
 - Black: `#1a1a1a`
@@ -60,6 +61,11 @@ stockcartl/
 - Electric Blue: `#4a90e2`
 
 ## 📝 Changelog
+
+### v1.1.1 (June 27, 2025)
+- Fixed: Variable product waitlist functionality for out-of-stock variations
+- Improved: Pre-generation of waitlist forms for better performance
+- Enhanced: Form submission handling for variable products
 
 ### v1.1.0 (June 26, 2025)
 - Added: Compatibility with WooCommerce High-Performance Order Storage (HPOS/Custom Order Tables)
