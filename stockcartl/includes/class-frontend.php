@@ -32,6 +32,9 @@ class StockCartl_Frontend {
     public function __construct($settings) {
         $this->settings = $settings;
         
+        // Get debug instance
+        $this->debug = function_exists('stockcartl_debug') ? stockcartl_debug() : null;
+        
         // Debug the settings
         add_action('wp_footer', function() {
             if (!is_product()) return;
@@ -39,7 +42,7 @@ class StockCartl_Frontend {
             echo '<div style="border: 2px dashed orange; padding: 10px; margin: 10px 0; position: fixed; bottom: 10px; right: 10px; background: white; z-index: 9999;">
                     <h4>StockCartl Settings Debug</h4>
                     <pre>Enabled: ' . ($this->settings->get('enabled') ? 'Yes' : 'No') . '</pre>
-                  </div>';
+                </div>';
         });
         
         // Hook into WooCommerce product page
@@ -648,12 +651,25 @@ class StockCartl_Frontend {
 
         // Verify required fields
         if (!isset($_POST['email']) || !isset($_POST['product_id'])) {
+            // Log the error
+            if ($this->debug) {
+                $this->debug->log_error('Waitlist join failed', array(
+                    'reason' => 'Missing required fields'
+                ));
+            }
             wp_send_json_error(array('message' => __('Missing required fields.', 'stockcartl')));
             return;
         }
         
         // Verify nonce with better error handling
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'stockcartl_join_waitlist')) {
+            // Log the error
+            if ($this->debug) {
+                $this->debug->log_error('Waitlist join failed', array(
+                    'reason' => 'Security check failed',
+                    'nonce_received' => isset($_POST['nonce']) ? 'yes' : 'no'
+                ));
+            }
             wp_send_json_error(array(
                 'message' => __('Security check failed.', 'stockcartl'),
                 'nonce_received' => isset($_POST['nonce']) ? 'yes: ' . $_POST['nonce'] : 'no'
@@ -666,22 +682,52 @@ class StockCartl_Frontend {
         $product_id = absint($_POST['product_id']);
         $variation_id = isset($_POST['variation_id']) ? absint($_POST['variation_id']) : 0;
         
+        // Log the attempt
+        if ($this->debug) {
+            $this->debug->log_info('Waitlist join attempt', array(
+                'email' => $email,
+                'product_id' => $product_id,
+                'variation_id' => $variation_id
+            ));
+        }
+
         // Debug log
         error_log("StockCartl: Processing waitlist join for product $product_id, variation $variation_id, email $email");
         
         // Validate email
         if (!is_email($email)) {
+            // Log the error
+            if ($this->debug) {
+                $this->debug->log_error('Waitlist join failed', array(
+                    'reason' => 'Invalid email',
+                    'email' => $email
+                ));
+            }
             wp_send_json_error(array('message' => __('Please enter a valid email address.', 'stockcartl')));
         }
         
         // Validate product
         $product = wc_get_product($product_id);
         if (!$product) {
+            // Log the error
+            if ($this->debug) {
+                $this->debug->log_error('Waitlist join failed', array(
+                    'reason' => 'Invalid product',
+                    'product_id' => $product_id
+                ));
+            }
             wp_send_json_error(array('message' => __('Invalid product.', 'stockcartl')));
         }
         
         // Check if product is actually out of stock
         if ($product->is_in_stock() && !$variation_id) {
+            // Log the error
+            if ($this->debug) {
+                $this->debug->log_error('Waitlist join failed', array(
+                    'reason' => 'Product in stock',
+                    'product_id' => $product_id
+                ));
+            }
             wp_send_json_error(array('message' => __('This product is in stock. Please add it to your cart.', 'stockcartl')));
         }
         
@@ -689,11 +735,27 @@ class StockCartl_Frontend {
         if ($variation_id > 0) {
             $variation = wc_get_product($variation_id);
             if (!$variation || $variation->get_parent_id() != $product_id) {
+                // Log the error
+                if ($this->debug) {
+                    $this->debug->log_error('Waitlist join failed', array(
+                        'reason' => 'Invalid variation',
+                        'product_id' => $product_id,
+                        'variation_id' => $variation_id
+                    ));
+                }
                 wp_send_json_error(array('message' => __('Invalid product variation.', 'stockcartl')));
             }
             
             // Check if variation is actually out of stock
             if ($variation->is_in_stock()) {
+                // Log the error
+                if ($this->debug) {
+                    $this->debug->log_error('Waitlist join failed', array(
+                        'reason' => 'Variation in stock',
+                        'product_id' => $product_id,
+                        'variation_id' => $variation_id
+                    ));
+                }
                 wp_send_json_error(array('message' => __('This variation is in stock. Please add it to your cart.', 'stockcartl')));
             }
         }
@@ -723,6 +785,15 @@ class StockCartl_Frontend {
         
         $count = $wpdb->get_var($query);
         if ($count > 0) {
+            // Log the error
+            if ($this->debug) {
+                $this->debug->log_error('Waitlist join failed', array(
+                    'reason' => 'Already on waitlist',
+                    'email' => $email,
+                    'product_id' => $product_id,
+                    'variation_id' => $variation_id
+                ));
+            }
             wp_send_json_error(array('message' => __('You are already on the waitlist for this product.', 'stockcartl')));
         }
         
@@ -759,6 +830,13 @@ class StockCartl_Frontend {
         $result = $wpdb->insert($table, $entry_data);
         
         if (!$result) {
+            // Log the error
+            if ($this->debug) {
+                $this->debug->log_error('Waitlist join failed', array(
+                    'reason' => 'Database insertion error',
+                    'entry_data' => $entry_data
+                ));
+            }
             wp_send_json_error(array('message' => __('Failed to add you to the waitlist. Please try again.', 'stockcartl')));
         }
         
@@ -794,15 +872,39 @@ class StockCartl_Frontend {
             $order_id = $payments->create_deposit_order($entry_id);
             
             if ($order_id) {
+                // Log success with deposit
+                if ($this->debug) {
+                    $this->debug->log_info('Waitlist join successful with deposit', array(
+                        'entry_id' => $entry_id,
+                        'position' => $position,
+                        'order_id' => $order_id
+                    ));
+                }
+                
                 // Return checkout URL
                 $order = wc_get_order($order_id);
                 wp_send_json_success(array(
                     'message' => __('You have been added to the waitlist!', 'stockcartl'),
                     'redirect' => $order->get_checkout_payment_url()
                 ));
+            } else {
+                // Log deposit creation failure
+                if ($this->debug) {
+                    $this->debug->log_error('Deposit order creation failed', array(
+                        'entry_id' => $entry_id
+                    ));
+                }
             }
         }
         
+        // Log the success
+        if ($this->debug) {
+            $this->debug->log_info('Waitlist join successful', array(
+                'entry_id' => $entry_id,
+                'position' => $position
+            ));
+        }
+
         // Return success
         wp_send_json_success(array(
             'message' => __('You have been added to the waitlist!', 'stockcartl'),

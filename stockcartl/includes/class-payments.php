@@ -46,6 +46,15 @@ class StockCartl_Payments {
         // HPOS Compatibility
         add_action('before_woocommerce_init', array($this, 'declare_hpos_compatibility'));
     }
+
+    /**
+     * Get debug instance
+     *
+     * @return StockCartl_Debug|null Debug instance
+     */
+    private function get_debug() {
+        return function_exists('stockcartl_debug') ? stockcartl_debug() : null;
+    }
     
     /**
      * Declare compatibility with HPOS (High-Performance Order Storage)
@@ -293,6 +302,15 @@ class StockCartl_Payments {
      * @param int $variation_id The variation ID (optional)
      */
     public function process_waitlist_for_product($product_id, $variation_id = null) {
+        // Log the event
+        $debug = $this->get_debug();
+        if ($debug) {
+            $debug->log_info('Processing waitlist for product', array(
+                'product_id' => $product_id,
+                'variation_id' => $variation_id,
+            ));
+        }
+        
         global $wpdb;
         $table = $wpdb->prefix . STOCKCARTL_TABLE_WAITLIST;
         
@@ -327,6 +345,12 @@ class StockCartl_Payments {
      * Process expired waitlist entries
      */
     public function process_expired_entries() {
+        // Log the event
+        $debug = $this->get_debug();
+        if ($debug) {
+            $debug->log_info('Processing expired waitlist entries');
+        }
+        
         global $wpdb;
         $table = $wpdb->prefix . STOCKCARTL_TABLE_WAITLIST;
         

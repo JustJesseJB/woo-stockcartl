@@ -246,6 +246,51 @@ class StockCartl_Settings {
                 'desc' => __('Use {product_name} and {site_name} as placeholders.', 'stockcartl')
             )
         );
+        // Debugging Settings Section
+        add_settings_section(
+            'stockcartl_debugging_settings',
+            __('Debugging Settings', 'stockcartl'),
+            array($this, 'render_debugging_section'),
+            'stockcartl_settings'
+        );
+
+        // Add fields to debugging section
+        add_settings_field(
+            'debug_mode',
+            __('Debug Mode', 'stockcartl'),
+            array($this, 'render_select_field'),
+            'stockcartl_settings',
+            'stockcartl_debugging_settings',
+            array(
+                'id' => 'debug_mode',
+                'default' => '0',
+                'options' => array(
+                    '0' => __('Disabled', 'stockcartl'),
+                    '1' => __('Basic (Logs Only)', 'stockcartl'),
+                    '2' => __('Advanced (Logs + Visual)', 'stockcartl')
+                ),
+                'desc' => __('Enable debugging to help troubleshoot issues.', 'stockcartl')
+            )
+        );
+
+        add_settings_field(
+            'log_retention_days',
+            __('Log Retention', 'stockcartl'),
+            array($this, 'render_select_field'),
+            'stockcartl_settings',
+            'stockcartl_debugging_settings',
+            array(
+                'id' => 'log_retention_days',
+                'default' => '7',
+                'options' => array(
+                    '7' => __('7 days', 'stockcartl'),
+                    '14' => __('14 days', 'stockcartl'),
+                    '30' => __('30 days', 'stockcartl'),
+                    '90' => __('90 days', 'stockcartl')
+                ),
+                'desc' => __('How long to keep log files before automatic cleanup.', 'stockcartl')
+            )
+        );
     }
     
     /**
@@ -332,6 +377,33 @@ class StockCartl_Settings {
         echo '<p>' . esc_html__('Configure email notification settings.', 'stockcartl') . '</p>';
     }
     
+    /**
+     * Render debugging section
+     */
+    public function render_debugging_section() {
+        echo '<p>' . esc_html__('Configure debugging and logging settings.', 'stockcartl') . '</p>';
+        
+        // Check if license class exists
+        if (class_exists('StockCartl_License')) {
+            $license = new StockCartl_License();
+            
+            // Show premium features teaser if needed
+            if (!$license->has_feature('advanced_logging')) {
+                echo '<div class="stockcartl-premium-notice" style="background: #f7f7f7; border-left: 4px solid #d4af37; padding: 10px 12px; margin-bottom: 10px;">';
+                echo '<p><strong>' . esc_html__('Upgrade to StockCartl Pro for advanced debugging features:', 'stockcartl') . '</strong></p>';
+                echo '<ul style="list-style-type: disc; margin-left: 20px;">';
+                echo '<li>' . esc_html__('Advanced logging with multiple log levels', 'stockcartl') . '</li>';
+                echo '<li>' . esc_html__('Extended log retention (up to 90 days)', 'stockcartl') . '</li>';
+                echo '<li>' . esc_html__('Enhanced log viewer with advanced filtering', 'stockcartl') . '</li>';
+                echo '<li>' . esc_html__('Log export functionality', 'stockcartl') . '</li>';
+                echo '<li>' . esc_html__('Email notifications for critical errors', 'stockcartl') . '</li>';
+                echo '</ul>';
+                echo '<p><a href="https://stockcartl.com/pricing" class="button button-primary" target="_blank">' . esc_html__('Upgrade Now', 'stockcartl') . '</a></p>';
+                echo '</div>';
+            }
+        }
+    }
+
     /**
      * Render checkbox field
      * 
@@ -460,6 +532,10 @@ class StockCartl_Settings {
         $output['email_waitlist_joined_subject'] = sanitize_text_field($input['email_waitlist_joined_subject']);
         $output['email_product_available_subject'] = sanitize_text_field($input['email_product_available_subject']);
         
+        // Validate debug settings
+        $output['debug_mode'] = isset($input['debug_mode']) ? absint($input['debug_mode']) : 0;
+        $output['log_retention_days'] = isset($input['log_retention_days']) ? absint($input['log_retention_days']) : 7;
+
         // Save to database
         $this->save_settings_to_db($output);
         

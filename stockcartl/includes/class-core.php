@@ -61,6 +61,15 @@ class StockCartl_Core {
     }
 
     /**
+     * Get debug instance
+     *
+     * @return StockCartl_Debug Debug instance
+     */
+    private function get_debug() {
+        return function_exists('stockcartl_debug') ? stockcartl_debug() : null;
+    }
+
+    /**
      * Initialize the plugin
      */
     public function init() {
@@ -231,6 +240,30 @@ class StockCartl_Core {
         
         // Store database version
         update_option('stockcartl_db_version', $this->db_version);
+
+        // Create log directory
+        $upload_dir = wp_upload_dir();
+        $log_dir = $upload_dir['basedir'] . '/stockcartl-logs';
+
+        if (!file_exists($log_dir)) {
+            wp_mkdir_p($log_dir);
+            
+            // Create .htaccess file to prevent direct access
+            $htaccess_file = $log_dir . '/.htaccess';
+            if (!file_exists($htaccess_file)) {
+                $htaccess_content = "# Prevent direct access to files\n";
+                $htaccess_content .= "<Files \"*\">\n";
+                $htaccess_content .= "    Require all denied\n";
+                $htaccess_content .= "</Files>";
+                @file_put_contents($htaccess_file, $htaccess_content);
+            }
+            
+            // Create index.php file to prevent directory listing
+            $index_file = $log_dir . '/index.php';
+            if (!file_exists($index_file)) {
+                @file_put_contents($index_file, "<?php\n// Silence is golden.");
+            }
+        }
     }
     
     /**

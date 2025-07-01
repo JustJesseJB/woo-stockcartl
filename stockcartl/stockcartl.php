@@ -125,6 +125,21 @@ function stockcartl_deactivate() {
 register_deactivation_hook(__FILE__, 'stockcartl_deactivate');
 
 /**
+ * Development mode flag - set to true to enable all features during development
+ */
+define('STOCKCARTL_DEV_MODE', true);
+
+/**
+ * Load debugging system
+ */
+function stockcartl_load_debugging() {
+    require_once STOCKCARTL_PLUGIN_DIR . 'includes/debugging/class-license.php';
+    require_once STOCKCARTL_PLUGIN_DIR . 'includes/debugging/class-debug.php';
+    require_once STOCKCARTL_PLUGIN_DIR . 'includes/debugging/class-debug-logs.php';
+}
+add_action('plugins_loaded', 'stockcartl_load_debugging', 1);
+
+/**
  * Start the plugin
  */
 function stockcartl_init() {
