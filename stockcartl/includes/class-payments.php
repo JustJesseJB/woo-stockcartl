@@ -53,7 +53,19 @@ class StockCartl_Payments {
      * @return StockCartl_Debug|null Debug instance
      */
     private function get_debug() {
-        return function_exists('stockcartl_debug') ? stockcartl_debug() : null;
+        global $stockcartl_debug;
+        
+        // Return global instance if available
+        if (isset($stockcartl_debug) && $stockcartl_debug instanceof StockCartl_Debug) {
+            return $stockcartl_debug;
+        }
+        
+        // Try function if global not available
+        if (function_exists('stockcartl_debug')) {
+            return stockcartl_debug();
+        }
+        
+        return null;
     }
     
     /**
@@ -113,6 +125,13 @@ class StockCartl_Payments {
     public function create_deposit_order($entry_id) {
         global $wpdb;
         
+        $debug = $this->get_debug();
+        if ($debug) {
+            $debug->log_info('Creating deposit order', array(
+                'entry_id' => $entry_id
+            ));
+        }
+        
         // Get entry data
         $entry = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}" . STOCKCARTL_TABLE_WAITLIST . " WHERE id = %d",
@@ -120,12 +139,23 @@ class StockCartl_Payments {
         ));
         
         if (!$entry) {
+            if ($debug) {
+                $debug->log_error('Failed to create deposit order - entry not found', array(
+                    'entry_id' => $entry_id
+                ));
+            }
             return false;
         }
         
         // Get product data
         $product = wc_get_product($entry->product_id);
         if (!$product) {
+            if ($debug) {
+                $debug->log_error('Failed to create deposit order - product not found', array(
+                    'entry_id' => $entry_id,
+                    'product_id' => $entry->product_id
+                ));
+            }
             return false;
         }
         
@@ -134,6 +164,13 @@ class StockCartl_Payments {
         if ($entry->variation_id) {
             $variation = wc_get_product($entry->variation_id);
             if (!$variation) {
+                if ($debug) {
+                    $debug->log_error('Failed to create deposit order - variation not found', array(
+                        'entry_id' => $entry_id,
+                        'product_id' => $entry->product_id,
+                        'variation_id' => $entry->variation_id
+                    ));
+                }
                 return false;
             }
         }
@@ -143,61 +180,107 @@ class StockCartl_Payments {
         $product_price = $variation ? $variation->get_price() : $product->get_price();
         $deposit_amount = round(($product_price * $deposit_percentage / 100), 2);
         
+        if ($debug) {
+            $debug->log_info('Calculating deposit amount', array(
+                'entry_id' => $entry_id,
+                'product_price' => $product_price,
+                'deposit_percentage' => $deposit_percentage,
+                'calculated_amount' => $deposit_amount
+            ));
+        }
+        
         // Check minimum deposit amount
         if ($deposit_amount < 0.01) {
             $deposit_amount = 0.01; // Minimum amount
+            if ($debug) {
+                $debug->log_info('Deposit amount below minimum, using minimum amount', array(
+                    'entry_id' => $entry_id,
+                    'minimum_amount' => $deposit_amount
+                ));
+            }
         }
         
-        // Create order using WooCommerce CRUD API
-        $order = new WC_Order();
-        
-        // Set order properties using CRUD methods
-        $order->set_status('pending');
-        $order->set_customer_id($entry->user_id);
-        $order->set_customer_note(sprintf(
-            __('Waitlist deposit for %s. Position will be secured after payment.', 'stockcartl'),
-            $variation ? $variation->get_formatted_name() : $product->get_name()
-        ));
-        $order->set_created_via('stockcartl');
-        $order->set_billing_email($entry->email);
-        
-        // Add product
-        $product_to_add = $variation ?: $product;
-        $item = new WC_Order_Item_Product();
-        $item->set_product($product_to_add);
-        $item->set_quantity(1);
-        $item->set_subtotal($deposit_amount);
-        $item->set_total($deposit_amount);
-        $item->set_name(sprintf(
-            __('%s%% Waitlist Deposit: %s', 'stockcartl'),
-            $deposit_percentage,
-            $product_to_add->get_formatted_name()
-        ));
-        $order->add_item($item);
-        
-        // Add order meta
-        $order->add_meta_data('_stockcartl_waitlist_entry_id', $entry_id);
-        $order->add_meta_data('_stockcartl_deposit_percentage', $deposit_percentage);
-        $order->add_meta_data('_stockcartl_is_deposit', 'yes');
-        
-        // Set order total
-        $order->set_total($deposit_amount);
-        
-        // Save order
-        $order->save();
-        
-        // Update waitlist entry
-        $wpdb->update(
-            $wpdb->prefix . STOCKCARTL_TABLE_WAITLIST,
-            array(
-                'waitlist_type' => 'deposit_pending',
-                'deposit_amount' => $deposit_amount,
-                'deposit_order_id' => $order->get_id()
-            ),
-            array('id' => $entry_id)
-        );
-        
-        return $order->get_id();
+        try {
+            // Create order using WooCommerce CRUD API
+            $order = new WC_Order();
+            
+            // Set order properties using CRUD methods
+            $order->set_status('pending');
+            $order->set_customer_id($entry->user_id);
+            $order->set_customer_note(sprintf(
+                __('Waitlist deposit for %s. Position will be secured after payment.', 'stockcartl'),
+                $variation ? $variation->get_formatted_name() : $product->get_name()
+            ));
+            $order->set_created_via('stockcartl');
+            $order->set_billing_email($entry->email);
+            
+            // Add product
+            $product_to_add = $variation ?: $product;
+            $item = new WC_Order_Item_Product();
+            $item->set_product($product_to_add);
+            $item->set_quantity(1);
+            $item->set_subtotal($deposit_amount);
+            $item->set_total($deposit_amount);
+            $item->set_name(sprintf(
+                __('%s%% Waitlist Deposit: %s', 'stockcartl'),
+                $deposit_percentage,
+                $product_to_add->get_formatted_name()
+            ));
+            $order->add_item($item);
+            
+            // Add order meta
+            $order->add_meta_data('_stockcartl_waitlist_entry_id', $entry_id);
+            $order->add_meta_data('_stockcartl_deposit_percentage', $deposit_percentage);
+            $order->add_meta_data('_stockcartl_is_deposit', 'yes');
+            
+            // Set order total
+            $order->set_total($deposit_amount);
+            
+            // Save order
+            $order->save();
+            $order_id = $order->get_id();
+            
+            if ($debug) {
+                $debug->log_info('Deposit order created successfully', array(
+                    'entry_id' => $entry_id,
+                    'order_id' => $order_id,
+                    'deposit_amount' => $deposit_amount
+                ));
+            }
+            
+            // Update waitlist entry
+            $result = $wpdb->update(
+                $wpdb->prefix . STOCKCARTL_TABLE_WAITLIST,
+                array(
+                    'waitlist_type' => 'deposit_pending',
+                    'deposit_amount' => $deposit_amount,
+                    'deposit_order_id' => $order_id
+                ),
+                array('id' => $entry_id)
+            );
+            
+            if ($result === false) {
+                if ($debug) {
+                    $debug->log_error('Failed to update waitlist entry with order details', array(
+                        'entry_id' => $entry_id,
+                        'order_id' => $order_id,
+                        'wpdb_error' => $wpdb->last_error
+                    ));
+                }
+            }
+            
+            return $order_id;
+        } catch (Exception $e) {
+            if ($debug) {
+                $debug->log_error('Exception occurred while creating deposit order', array(
+                    'entry_id' => $entry_id,
+                    'error_message' => $e->getMessage(),
+                    'error_trace' => $e->getTraceAsString()
+                ));
+            }
+            
+            return false;
+        }
     }
     
     /**
@@ -209,25 +292,62 @@ class StockCartl_Payments {
      * @param WC_Order $order Order object
      */
     public function handle_order_status_change($order_id, $from_status, $to_status, $order) {
+        $debug = $this->get_debug();
+        
         // Check if this is a waitlist deposit order
         $is_deposit = $order->get_meta('_stockcartl_is_deposit');
+        
+        // Only proceed if this is a deposit order
         if ($is_deposit !== 'yes') {
             return;
+        }
+        
+        if ($debug) {
+            $debug->log_info('Processing waitlist deposit order status change', array(
+                'order_id' => $order_id,
+                'from_status' => $from_status,
+                'to_status' => $to_status
+            ));
         }
         
         // Get waitlist entry ID
         $entry_id = $order->get_meta('_stockcartl_waitlist_entry_id');
         if (!$entry_id) {
+            if ($debug) {
+                $debug->log_error('Cannot process order status change - missing waitlist entry ID', array(
+                    'order_id' => $order_id
+                ));
+            }
             return;
         }
         
         global $wpdb;
         $table = $wpdb->prefix . STOCKCARTL_TABLE_WAITLIST;
         
+        // Get entry to validate it exists
+        $entry = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $entry_id));
+        if (!$entry) {
+            if ($debug) {
+                $debug->log_error('Cannot process order status change - waitlist entry not found', array(
+                    'order_id' => $order_id,
+                    'entry_id' => $entry_id
+                ));
+            }
+            return;
+        }
+        
         // Handle completed payment
         if ($to_status === 'completed' || $to_status === 'processing') {
+            if ($debug) {
+                $debug->log_info('Deposit payment completed, updating waitlist entry', array(
+                    'order_id' => $order_id,
+                    'entry_id' => $entry_id,
+                    'status' => $to_status
+                ));
+            }
+            
             // Update waitlist entry
-            $wpdb->update(
+            $result = $wpdb->update(
                 $table,
                 array(
                     'waitlist_type' => 'deposit',
@@ -237,8 +357,35 @@ class StockCartl_Payments {
                 array('id' => $entry_id)
             );
             
+            if ($result === false) {
+                if ($debug) {
+                    $debug->log_error('Failed to update waitlist entry for completed payment', array(
+                        'order_id' => $order_id,
+                        'entry_id' => $entry_id,
+                        'wpdb_error' => $wpdb->last_error
+                    ));
+                }
+            }
+            
             // Update order status to custom status
-            $order->update_status('waitlist-deposit', __('Deposit paid and waitlist position secured.', 'stockcartl'));
+            try {
+                $order->update_status('waitlist-deposit', __('Deposit paid and waitlist position secured.', 'stockcartl'));
+                
+                if ($debug) {
+                    $debug->log_info('Updated order to waitlist-deposit status', array(
+                        'order_id' => $order_id,
+                        'entry_id' => $entry_id
+                    ));
+                }
+            } catch (Exception $e) {
+                if ($debug) {
+                    $debug->log_error('Failed to update order status', array(
+                        'order_id' => $order_id,
+                        'entry_id' => $entry_id,
+                        'error_message' => $e->getMessage()
+                    ));
+                }
+            }
             
             // Send confirmation email
             $this->send_deposit_confirmation($entry_id);
@@ -249,8 +396,16 @@ class StockCartl_Payments {
         
         // Handle refunded/cancelled order
         if ($to_status === 'refunded' || $to_status === 'cancelled') {
+            if ($debug) {
+                $debug->log_info('Deposit order refunded or cancelled', array(
+                    'order_id' => $order_id,
+                    'entry_id' => $entry_id,
+                    'status' => $to_status
+                ));
+            }
+            
             // Update waitlist entry back to free
-            $wpdb->update(
+            $result = $wpdb->update(
                 $table,
                 array(
                     'waitlist_type' => 'free',
@@ -259,6 +414,16 @@ class StockCartl_Payments {
                 ),
                 array('id' => $entry_id)
             );
+            
+            if ($result === false) {
+                if ($debug) {
+                    $debug->log_error('Failed to update waitlist entry for refunded/cancelled order', array(
+                        'order_id' => $order_id,
+                        'entry_id' => $entry_id,
+                        'wpdb_error' => $wpdb->last_error
+                    ));
+                }
+            }
             
             // Track analytics
             $this->track_deposit_refunded($entry_id);
@@ -393,52 +558,126 @@ class StockCartl_Payments {
     public function process_deposit_refund($entry_id) {
         global $wpdb;
         
+        $debug = $this->get_debug();
+        if ($debug) {
+            $debug->log_info('Processing deposit refund for expired entry', array(
+                'entry_id' => $entry_id
+            ));
+        }
+        
         // Get entry data
         $entry = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}" . STOCKCARTL_TABLE_WAITLIST . " WHERE id = %d",
             $entry_id
         ));
         
-        if (!$entry || $entry->waitlist_type !== 'deposit' || !$entry->deposit_order_id) {
+        if (!$entry) {
+            if ($debug) {
+                $debug->log_error('Failed to process refund - entry not found', array(
+                    'entry_id' => $entry_id
+                ));
+            }
+            return false;
+        }
+        
+        if ($entry->waitlist_type !== 'deposit' || !$entry->deposit_order_id) {
+            if ($debug) {
+                $debug->log_error('Failed to process refund - entry is not a deposit or missing order ID', array(
+                    'entry_id' => $entry_id,
+                    'waitlist_type' => $entry->waitlist_type,
+                    'deposit_order_id' => $entry->deposit_order_id
+                ));
+            }
             return false;
         }
         
         // Get order using WooCommerce API
         $order = wc_get_order($entry->deposit_order_id);
         if (!$order) {
+            if ($debug) {
+                $debug->log_error('Failed to process refund - order not found', array(
+                    'entry_id' => $entry_id,
+                    'order_id' => $entry->deposit_order_id
+                ));
+            }
             return false;
         }
         
         // Check if already refunded
         if ($order->get_status() === 'refunded') {
+            if ($debug) {
+                $debug->log_info('Order already refunded, skipping', array(
+                    'entry_id' => $entry_id,
+                    'order_id' => $entry->deposit_order_id
+                ));
+            }
             return true;
         }
         
-        // Create refund using WooCommerce API
-        $refund_args = array(
-            'amount' => $entry->deposit_amount,
-            'reason' => __('Waitlist expired - automatic refund', 'stockcartl'),
-            'order_id' => $order->get_id(),
-            'line_items' => array()
-        );
-        
-        // Create the refund
-        $refund = wc_create_refund($refund_args);
-        
-        if (is_wp_error($refund)) {
-            // Log error
-            error_log('StockCartl refund failed: ' . $refund->get_error_message());
+        try {
+            // Create refund using WooCommerce API
+            $refund_args = array(
+                'amount' => $entry->deposit_amount,
+                'reason' => __('Waitlist expired - automatic refund', 'stockcartl'),
+                'order_id' => $order->get_id(),
+                'line_items' => array()
+            );
+            
+            if ($debug) {
+                $debug->log_info('Creating refund', array(
+                    'entry_id' => $entry_id,
+                    'order_id' => $entry->deposit_order_id,
+                    'amount' => $entry->deposit_amount
+                ));
+            }
+            
+            // Create the refund
+            $refund = wc_create_refund($refund_args);
+            
+            if (is_wp_error($refund)) {
+                $error_message = $refund->get_error_message();
+                
+                if ($debug) {
+                    $debug->log_error('Failed to create refund - WP error', array(
+                        'entry_id' => $entry_id,
+                        'order_id' => $entry->deposit_order_id,
+                        'error_message' => $error_message
+                    ));
+                }
+                
+                // Log error to standard error log
+                error_log('StockCartl refund failed: ' . $error_message);
+                return false;
+            }
+            
+            // Add note to order
+            $order->add_order_note(__('Waitlist entry expired. Deposit automatically refunded.', 'stockcartl'));
+            
+            if ($debug) {
+                $debug->log_info('Refund created successfully', array(
+                    'entry_id' => $entry_id,
+                    'order_id' => $entry->deposit_order_id,
+                    'refund_id' => $refund->get_id()
+                ));
+            }
+            
+            // Send notification
+            $notifications = new StockCartl_Notifications($this->settings);
+            $notifications->send_deposit_refunded_notification($entry_id);
+            
+            return true;
+        } catch (Exception $e) {
+            if ($debug) {
+                $debug->log_error('Exception occurred while processing refund', array(
+                    'entry_id' => $entry_id,
+                    'order_id' => $entry->deposit_order_id,
+                    'error_message' => $e->getMessage(),
+                    'error_trace' => $e->getTraceAsString()
+                ));
+            }
+            
             return false;
         }
-        
-        // Add note to order
-        $order->add_order_note(__('Waitlist entry expired. Deposit automatically refunded.', 'stockcartl'));
-        
-        // Send notification
-        $notifications = new StockCartl_Notifications($this->settings);
-        $notifications->send_deposit_refunded_notification($entry_id);
-        
-        return true;
     }
     
     /**

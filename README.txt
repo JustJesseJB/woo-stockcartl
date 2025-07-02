@@ -4,9 +4,9 @@ Tags: woocommerce, waitlist, stock, inventory, out-of-stock, deposits, preorder
 Requires at least: 5.0
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 1.1.1
-License: Proprietary
-License URI: https://stockcartl.com/license
+Stable tag: 1.1.2
+License: GPLv2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 Transform "Out of Stock" into revenue opportunities with intelligent waitlist management, deposit priority systems, and social proof features.
 
@@ -27,6 +27,7 @@ StockCartl is a powerful WooCommerce extension that helps you convert out-of-sto
 * **CSV Export** - Export waitlist data for external processing
 * **WooCommerce HPOS Compatible** - Full support for High-Performance Order Storage / Custom Order Tables
 * **Variable Products Support** - Seamless waitlist functionality for out-of-stock variations
+* **Debug System** - Built-in debugging tools for troubleshooting
 
 ### Pro Version (Coming Soon)
 
@@ -63,6 +64,10 @@ If a product doesn't come back in stock during the waitlist period (configurable
 
 Yes! As of version 1.1.0, StockCartl is fully compatible with WooCommerce's High-Performance Order Storage (HPOS) feature. It works seamlessly whether you have HPOS enabled or disabled.
 
+= How can I troubleshoot issues with the plugin? =
+
+StockCartl includes a built-in debugging system. Administrators can enable debug logging in the plugin settings, which logs all key operations including waitlist entries, deposit payments, and email notifications. Debug logs can be viewed in the StockCartl > Debug Logs admin page.
+
 == Screenshots ==
 
 1. Frontend waitlist form on product page
@@ -70,8 +75,15 @@ Yes! As of version 1.1.0, StockCartl is fully compatible with WooCommerce's High
 3. Waitlist management interface
 4. Settings panel
 5. Email notification template
+6. Debug logs admin page
 
 == Changelog ==
+
+= 1.1.2 - July 3, 2025 =
+* Added: Comprehensive debugging system for improved troubleshooting
+* Enhanced: Error logging for critical operations
+* Improved: Debug log viewer in admin dashboard
+* Fixed: Debug log directory creation with better error handling
 
 = 1.1.1 - June 27, 2025 =
 * Fixed: Variable product waitlist functionality for out-of-stock variations
@@ -91,6 +103,9 @@ Yes! As of version 1.1.0, StockCartl is fully compatible with WooCommerce's High
 * Admin dashboard
 
 == Upgrade Notice ==
+
+= 1.1.2 =
+Important debugging enhancements to help diagnose and resolve issues. This update includes a comprehensive error logging system and improved debug tools for administrators.
 
 = 1.1.1 =
 Important fix for variable product waitlists. This update ensures that waitlist forms appear correctly for out-of-stock variations and improves the submission process.

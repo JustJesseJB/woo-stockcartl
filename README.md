@@ -62,6 +62,12 @@ stockcartl/
 
 ## 📝 Changelog
 
+### v1.1.2 - July 3, 2025
+- Added: Comprehensive debugging system for improved troubleshooting
+- Enhanced: Error logging for critical operations
+- Improved: Debug log viewer in admin dashboard
+- Fixed: Debug log directory creation with better error handling
+
 ### v1.1.1 (June 27, 2025)
 - Fixed: Variable product waitlist functionality for out-of-stock variations
 - Improved: Pre-generation of waitlist forms for better performance
@@ -84,4 +90,4 @@ This is a private development project. For issues or feature requests, please cr
 
 ## 📄 License
 
-Proprietary - All rights reserved to StockCartl
+GPL v2 or later - See LICENSE.txt for details.

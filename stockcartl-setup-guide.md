@@ -164,17 +164,46 @@ The email templates are pre-configured, but you may want to customize them to ma
    - Deposits will be automatically refunded when entries expire
    - You can filter to view expired entries in the Waitlists page
 
-## Troubleshooting
+## 7. Debugging and Troubleshooting
 
-### Common Issues
+StockCartl includes a comprehensive debugging system to help identify and resolve issues.
+
+### Enabling Debug Mode
+
+1. **Access Debug Settings**
+   - Go to WooCommerce > StockCartl Settings > Debugging
+   - Set Debug Mode to one of the following:
+     - **Disabled**: No debug logs are generated
+     - **Basic (Logs Only)**: Records logs but doesn't display debug information
+     - **Advanced (Logs + Visual)**: Records logs and displays debug information in the admin area
+
+2. **View Debug Logs**
+   - Navigate to StockCartl > Debug Logs in the admin menu
+   - Here you can view, filter, and export debug logs
+   - Logs are categorized by severity: Info, Warning, Error, and Critical
+
+3. **Understanding Log Levels**
+   - **Info**: Normal operational events (waitlist joined, email sent, etc.)
+   - **Warning**: Non-critical issues that may need attention
+   - **Error**: Errors that prevented an operation from completing
+   - **Critical**: Serious errors that require immediate attention
+
+4. **Running the Debug Test Script**
+   - For advanced troubleshooting, you can use the debug test script
+   - Visit `/wp-content/plugins/stockcartl/test-debug.php` in your browser
+   - This will check if the debugging system is working properly
+
+### Common Issues and Solutions
 
 1. **Waitlist Form Not Showing**
    - Verify the product is actually set to "Out of stock"
    - Check that the plugin is enabled in the StockCartl settings
    - Check if the product has waitlist disabled in its individual settings
+   - Review debug logs for any JavaScript errors that might prevent form display
 
 2. **Emails Not Being Sent**
-   - Check your WordPress email configuration
+   - Check debug logs for email sending errors
+   - Verify WordPress email configuration
    - Try installing an SMTP plugin to ensure reliable email delivery
    - Check the notification queue in the database
 
@@ -182,10 +211,27 @@ The email templates are pre-configured, but you may want to customize them to ma
    - Verify that your WooCommerce payment gateways are configured correctly
    - Test with a simple payment method like Cash on Delivery first
    - Check WooCommerce order logs for any errors
+   - Look for deposit-related errors in the StockCartl debug logs
 
 4. **Database Issues**
+   - Database errors will be logged with their specific error messages
    - If you experience database errors, try deactivating and reactivating the plugin
    - This will trigger the database tables to be recreated
+   - Look for SQL errors in the debug logs
+
+5. **Log Directory Issues**
+   - If logs aren't being written, check permissions on the `/wp-content/uploads/stockcartl-logs/` directory
+   - The directory should be writable by the web server
+
+### System Information
+
+The Debug Logs page includes a System Information tab that provides details about:
+- WordPress configuration
+- WooCommerce setup
+- Server environment
+- Active plugins
+
+This information is valuable when contacting support for assistance.
 
 ### Getting Support
 
@@ -199,6 +245,8 @@ If you encounter issues not covered in this guide:
    - PHP version
    - Steps to reproduce the issue
    - Any error messages you're seeing
+   - Debug logs (exported from the Debug Logs page)
+   - System information (from the System Info tab)
 
 ## Next Steps
 

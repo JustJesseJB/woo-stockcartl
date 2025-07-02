@@ -58,21 +58,46 @@ class StockCartl_Core {
     public function __construct() {
         // Database version - increment when schema changes
         $this->db_version = '1.0';
+
+        // Get debug instance
+        $this->debug = $this->get_debug();
     }
 
     /**
      * Get debug instance
      *
-     * @return StockCartl_Debug Debug instance
+     * @return StockCartl_Debug|null Debug instance
      */
     private function get_debug() {
-        return function_exists('stockcartl_debug') ? stockcartl_debug() : null;
+        global $stockcartl_debug;
+        
+        // Return global instance if available
+        if (isset($stockcartl_debug) && $stockcartl_debug instanceof StockCartl_Debug) {
+            return $stockcartl_debug;
+        }
+        
+        // Try function if global not available
+        if (function_exists('stockcartl_debug')) {
+            return stockcartl_debug();
+        }
+        
+        return null;
     }
 
     /**
      * Initialize the plugin
      */
     public function init() {
+        // Log plugin initialization
+        if ($this->debug) {
+            $this->debug->log_info('StockCartl plugin initialized', array(
+                'version' => STOCKCARTL_VERSION,
+                'is_admin' => is_admin() ? 'yes' : 'no',
+                'wp_version' => get_bloginfo('version'),
+                'php_version' => phpversion()
+            ));
+        }
+
         // Check database version and upgrade if needed
         $this->check_db_version();
 
@@ -105,6 +130,11 @@ class StockCartl_Core {
         
         // Declare HPOS compatibility
         add_action('before_woocommerce_init', array($this, 'declare_hpos_compatibility'));
+        
+        // Log successful initialization
+        if ($this->debug) {
+            $this->debug->log_info('StockCartl plugin initialization complete');
+        }
     }
     
     /**
@@ -145,6 +175,13 @@ class StockCartl_Core {
      */
     public function create_tables() {
         global $wpdb;
+        
+        // Log database creation start
+        if ($this->debug) {
+            $this->debug->log_info('Creating/updating database tables', array(
+                'db_version' => $this->db_version
+            ));
+        }
         
         $charset_collate = $wpdb->get_charset_collate();
         
@@ -230,38 +267,64 @@ class StockCartl_Core {
         
         // Use dbDelta to create/update tables
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql_waitlist);
-        dbDelta($sql_settings);
-        dbDelta($sql_analytics);
-        dbDelta($sql_notifications);
         
-        // Insert default settings
-        $this->insert_default_settings();
-        
-        // Store database version
-        update_option('stockcartl_db_version', $this->db_version);
+        try {
+            dbDelta($sql_waitlist);
+            dbDelta($sql_settings);
+            dbDelta($sql_analytics);
+            dbDelta($sql_notifications);
+            
+            // Insert default settings
+            $this->insert_default_settings();
+            
+            // Store database version
+            update_option('stockcartl_db_version', $this->db_version);
+            
+            if ($this->debug) {
+                $this->debug->log_info('Database tables created/updated successfully');
+            }
+        } catch (Exception $e) {
+            if ($this->debug) {
+                $this->debug->log_error('Error creating database tables', array(
+                    'error' => $e->getMessage()
+                ));
+            }
+        }
 
         // Create log directory
         $upload_dir = wp_upload_dir();
         $log_dir = $upload_dir['basedir'] . '/stockcartl-logs';
 
         if (!file_exists($log_dir)) {
-            wp_mkdir_p($log_dir);
+            $dir_created = wp_mkdir_p($log_dir);
             
-            // Create .htaccess file to prevent direct access
-            $htaccess_file = $log_dir . '/.htaccess';
-            if (!file_exists($htaccess_file)) {
-                $htaccess_content = "# Prevent direct access to files\n";
-                $htaccess_content .= "<Files \"*\">\n";
-                $htaccess_content .= "    Require all denied\n";
-                $htaccess_content .= "</Files>";
-                @file_put_contents($htaccess_file, $htaccess_content);
-            }
-            
-            // Create index.php file to prevent directory listing
-            $index_file = $log_dir . '/index.php';
-            if (!file_exists($index_file)) {
-                @file_put_contents($index_file, "<?php\n// Silence is golden.");
+            if ($dir_created) {
+                if ($this->debug) {
+                    $this->debug->log_info('Log directory created', array(
+                        'path' => $log_dir
+                    ));
+                }
+                
+                // Create .htaccess file to prevent direct access
+                $htaccess_file = $log_dir . '/.htaccess';
+                if (!file_exists($htaccess_file)) {
+                    $htaccess_content = "# Prevent direct access to files\n";
+                    $htaccess_content .= "<Files \"*\">\n";
+                    $htaccess_content .= "    Require all denied\n";
+                    $htaccess_content .= "</Files>";
+                    @file_put_contents($htaccess_file, $htaccess_content);
+                }
+                
+                // Create index.php file to prevent directory listing
+                $index_file = $log_dir . '/index.php';
+                if (!file_exists($index_file)) {
+                    @file_put_contents($index_file, "<?php\n// Silence is golden.");
+                }
+            } else if ($this->debug) {
+                $this->debug->log_error('Failed to create log directory', array(
+                    'path' => $log_dir,
+                    'error' => error_get_last()
+                ));
             }
         }
     }
@@ -359,7 +422,21 @@ class StockCartl_Core {
     private function check_db_version() {
         $installed_db_version = get_option('stockcartl_db_version', '0');
         
+        if ($this->debug) {
+            $this->debug->log_info('Checking database version', array(
+                'installed_version' => $installed_db_version,
+                'current_version' => $this->db_version,
+                'needs_upgrade' => version_compare($installed_db_version, $this->db_version, '<') ? 'yes' : 'no'
+            ));
+        }
+        
         if (version_compare($installed_db_version, $this->db_version, '<')) {
+            if ($this->debug) {
+                $this->debug->log_info('Database upgrade required', array(
+                    'from_version' => $installed_db_version,
+                    'to_version' => $this->db_version
+                ));
+            }
             $this->create_tables();
         }
     }

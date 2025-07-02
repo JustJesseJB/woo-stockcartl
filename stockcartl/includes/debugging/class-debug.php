@@ -89,22 +89,63 @@ class StockCartl_Debug {
 
         // Create log directory if it doesn't exist
         if (!file_exists($this->log_dir)) {
-            wp_mkdir_p($this->log_dir);
-
-            // Create .htaccess file to prevent direct access
-            $htaccess_file = $this->log_dir . '/.htaccess';
-            if (!file_exists($htaccess_file)) {
-                $htaccess_content = "# Prevent direct access to files\n";
-                $htaccess_content .= "<Files \"*\">\n";
-                $htaccess_content .= "    Require all denied\n";
-                $htaccess_content .= "</Files>";
-                @file_put_contents($htaccess_file, $htaccess_content);
-            }
-
-            // Create index.php file to prevent directory listing
-            $index_file = $this->log_dir . '/index.php';
-            if (!file_exists($index_file)) {
-                @file_put_contents($index_file, "<?php\n// Silence is golden.");
+            $dir_created = wp_mkdir_p($this->log_dir);
+            
+            if (!$dir_created) {
+                // Log failure with specific error
+                error_log('StockCartl: Failed to create log directory: ' . $this->log_dir . '. Error: ' . error_get_last()['message']);
+                
+                // Show admin notice immediately and on next page load
+                add_action('admin_notices', function() {
+                    ?>
+                    <div class="notice notice-error">
+                        <p><strong>StockCartl Debug Error:</strong> <?php printf(
+                            __('Failed to create log directory at %s. Please check server permissions.', 'stockcartl'),
+                            '<code>' . esc_html($this->log_dir) . '</code>'
+                        ); ?></p>
+                    </div>
+                    <?php
+                });
+                
+                update_option('stockcartl_debug_dir_error', true);
+            } else {
+                // Create .htaccess file to prevent direct access
+                $htaccess_file = $this->log_dir . '/.htaccess';
+                if (!file_exists($htaccess_file)) {
+                    $htaccess_content = "# Prevent direct access to files\n";
+                    $htaccess_content .= "<Files \"*\">\n";
+                    $htaccess_content .= "    Require all denied\n";
+                    $htaccess_content .= "</Files>";
+                    @file_put_contents($htaccess_file, $htaccess_content);
+                }
+                
+                // Create index.php file to prevent directory listing
+                $index_file = $this->log_dir . '/index.php';
+                if (!file_exists($index_file)) {
+                    @file_put_contents($index_file, "<?php\n// Silence is golden.");
+                }
+                
+                // Make sure the directory is writable
+                if (!is_writable($this->log_dir)) {
+                    // Try to set permissions
+                    @chmod($this->log_dir, 0755);
+                    
+                    if (!is_writable($this->log_dir)) {
+                        add_action('admin_notices', function() {
+                            ?>
+                            <div class="notice notice-error">
+                                <p><strong>StockCartl Debug Error:</strong> <?php printf(
+                                    __('Log directory exists but is not writable: %s', 'stockcartl'),
+                                    '<code>' . esc_html($this->log_dir) . '</code>'
+                                ); ?></p>
+                            </div>
+                            <?php
+                        });
+                    }
+                }
+                
+                // Clear any previous error flag
+                delete_option('stockcartl_debug_dir_error');
             }
         }
         
@@ -195,6 +236,24 @@ class StockCartl_Debug {
             self::$instance = new self();
         }
         return self::$instance;
+    }
+
+    /**
+     * Get the log directory path
+     *
+     * @return string Log directory path
+     */
+    public function get_log_dir() {
+        return $this->log_dir;
+    }
+
+    /**
+     * Get the log file path
+     *
+     * @return string Log file path
+     */
+    public function get_log_file() {
+        return $this->log_file;
     }
 
     /**
@@ -784,5 +843,14 @@ add_action('plugins_loaded', array('StockCartl_Debug', 'get_instance'), 11);
  * @return StockCartl_Debug Debug instance
  */
 function stockcartl_debug() {
-    return StockCartl_Debug::get_instance();
+    global $stockcartl_debug;
+    
+    // Return global instance if available
+    if (isset($stockcartl_debug) && $stockcartl_debug instanceof StockCartl_Debug) {
+        return $stockcartl_debug;
+    }
+    
+    // Fall back to creating a new instance
+    $stockcartl_debug = StockCartl_Debug::get_instance();
+    return $stockcartl_debug;
 }

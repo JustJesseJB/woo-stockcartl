@@ -11,7 +11,7 @@
  * Plugin Name:       StockCartl
  * Plugin URI:        https://stockcartl.com
  * Description:       Transform "Out of Stock" into revenue opportunities with intelligent waitlist management, deposit priority systems, and social proof features.
- * Version:           1.1.1
+ * Version:           1.1.2
  * Requires at least: 5.0
  * Requires PHP:      7.4
  * Author:            Amplified Plugins
@@ -30,7 +30,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('STOCKCARTL_VERSION', '1.1.1');
+define('STOCKCARTL_VERSION', '1.1.2');
 define('STOCKCARTL_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('STOCKCARTL_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('STOCKCARTL_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -136,6 +136,27 @@ function stockcartl_load_debugging() {
     require_once STOCKCARTL_PLUGIN_DIR . 'includes/debugging/class-license.php';
     require_once STOCKCARTL_PLUGIN_DIR . 'includes/debugging/class-debug.php';
     require_once STOCKCARTL_PLUGIN_DIR . 'includes/debugging/class-debug-logs.php';
+    
+    // Initialize the global debug instance
+    global $stockcartl_debug;
+    $stockcartl_debug = StockCartl_Debug::get_instance();
+    
+    // Add a dedicated helper function that's easier to use
+    if (!function_exists('stockcartl_debug')) {
+        function stockcartl_debug() {
+            global $stockcartl_debug;
+            return $stockcartl_debug;
+        }
+    }
+    
+    // Log plugin initialization
+    if ($stockcartl_debug) {
+        $stockcartl_debug->log_info('StockCartl plugin initialized', array(
+            'version' => STOCKCARTL_VERSION,
+            'wp_version' => get_bloginfo('version'),
+            'php_version' => phpversion()
+        ));
+    }
 }
 add_action('plugins_loaded', 'stockcartl_load_debugging', 1);
 

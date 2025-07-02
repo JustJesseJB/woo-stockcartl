@@ -33,7 +33,7 @@ class StockCartl_Frontend {
         $this->settings = $settings;
         
         // Get debug instance
-        $this->debug = function_exists('stockcartl_debug') ? stockcartl_debug() : null;
+        $this->debug = $this->get_debug();
         
         // Debug the settings
         add_action('wp_footer', function() {
@@ -61,6 +61,27 @@ class StockCartl_Frontend {
         add_action('before_woocommerce_init', array($this, 'declare_hpos_compatibility'));
     }
     
+    /**
+     * Get debug instance
+     *
+     * @return StockCartl_Debug|null Debug instance
+     */
+    private function get_debug() {
+        global $stockcartl_debug;
+        
+        // Return global instance if available
+        if (isset($stockcartl_debug) && $stockcartl_debug instanceof StockCartl_Debug) {
+            return $stockcartl_debug;
+        }
+        
+        // Try function if global not available
+        if (function_exists('stockcartl_debug')) {
+            return stockcartl_debug();
+        }
+        
+        return null;
+    }
+
     /**
      * Declare compatibility with HPOS (High-Performance Order Storage)
      */
@@ -652,8 +673,9 @@ class StockCartl_Frontend {
         // Verify required fields
         if (!isset($_POST['email']) || !isset($_POST['product_id'])) {
             // Log the error
-            if ($this->debug) {
-                $this->debug->log_error('Waitlist join failed', array(
+            $debug = $this->get_debug();
+            if ($debug) {
+                $debug->log_error('Waitlist join failed', array(
                     'reason' => 'Missing required fields'
                 ));
             }
@@ -664,8 +686,9 @@ class StockCartl_Frontend {
         // Verify nonce with better error handling
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'stockcartl_join_waitlist')) {
             // Log the error
-            if ($this->debug) {
-                $this->debug->log_error('Waitlist join failed', array(
+            $debug = $this->get_debug();
+            if ($debug) {
+                $debug->log_error('Waitlist join failed', array(
                     'reason' => 'Security check failed',
                     'nonce_received' => isset($_POST['nonce']) ? 'yes' : 'no'
                 ));
@@ -683,8 +706,9 @@ class StockCartl_Frontend {
         $variation_id = isset($_POST['variation_id']) ? absint($_POST['variation_id']) : 0;
         
         // Log the attempt
-        if ($this->debug) {
-            $this->debug->log_info('Waitlist join attempt', array(
+        $debug = $this->get_debug();
+        if ($debug) {
+            $debug->log_info('Waitlist join attempt', array(
                 'email' => $email,
                 'product_id' => $product_id,
                 'variation_id' => $variation_id
@@ -697,8 +721,9 @@ class StockCartl_Frontend {
         // Validate email
         if (!is_email($email)) {
             // Log the error
-            if ($this->debug) {
-                $this->debug->log_error('Waitlist join failed', array(
+            $debug = $this->get_debug();
+            if ($debug) {
+                $debug->log_error('Waitlist join failed', array(
                     'reason' => 'Invalid email',
                     'email' => $email
                 ));
@@ -710,8 +735,9 @@ class StockCartl_Frontend {
         $product = wc_get_product($product_id);
         if (!$product) {
             // Log the error
-            if ($this->debug) {
-                $this->debug->log_error('Waitlist join failed', array(
+            $debug = $this->get_debug();
+            if ($debug) {
+                $debug->log_error('Waitlist join failed', array(
                     'reason' => 'Invalid product',
                     'product_id' => $product_id
                 ));
@@ -722,8 +748,9 @@ class StockCartl_Frontend {
         // Check if product is actually out of stock
         if ($product->is_in_stock() && !$variation_id) {
             // Log the error
-            if ($this->debug) {
-                $this->debug->log_error('Waitlist join failed', array(
+            $debug = $this->get_debug();
+            if ($debug) {
+                $debug->log_error('Waitlist join failed', array(
                     'reason' => 'Product in stock',
                     'product_id' => $product_id
                 ));
@@ -736,8 +763,9 @@ class StockCartl_Frontend {
             $variation = wc_get_product($variation_id);
             if (!$variation || $variation->get_parent_id() != $product_id) {
                 // Log the error
-                if ($this->debug) {
-                    $this->debug->log_error('Waitlist join failed', array(
+                $debug = $this->get_debug();
+                if ($debug) {
+                    $debug->log_error('Waitlist join failed', array(
                         'reason' => 'Invalid variation',
                         'product_id' => $product_id,
                         'variation_id' => $variation_id
@@ -749,8 +777,9 @@ class StockCartl_Frontend {
             // Check if variation is actually out of stock
             if ($variation->is_in_stock()) {
                 // Log the error
-                if ($this->debug) {
-                    $this->debug->log_error('Waitlist join failed', array(
+                $debug = $this->get_debug();
+                if ($debug) {
+                    $debug->log_error('Waitlist join failed', array(
                         'reason' => 'Variation in stock',
                         'product_id' => $product_id,
                         'variation_id' => $variation_id
@@ -786,8 +815,9 @@ class StockCartl_Frontend {
         $count = $wpdb->get_var($query);
         if ($count > 0) {
             // Log the error
-            if ($this->debug) {
-                $this->debug->log_error('Waitlist join failed', array(
+            $debug = $this->get_debug();
+            if ($debug) {
+                $debug->log_error('Waitlist join failed', array(
                     'reason' => 'Already on waitlist',
                     'email' => $email,
                     'product_id' => $product_id,
@@ -831,8 +861,9 @@ class StockCartl_Frontend {
         
         if (!$result) {
             // Log the error
-            if ($this->debug) {
-                $this->debug->log_error('Waitlist join failed', array(
+            $debug = $this->get_debug();
+            if ($debug) {
+                $debug->log_error('Waitlist join failed', array(
                     'reason' => 'Database insertion error',
                     'entry_data' => $entry_data
                 ));
@@ -873,8 +904,9 @@ class StockCartl_Frontend {
             
             if ($order_id) {
                 // Log success with deposit
-                if ($this->debug) {
-                    $this->debug->log_info('Waitlist join successful with deposit', array(
+                $debug = $this->get_debug();
+                if ($debug) {
+                    $debug->log_info('Waitlist join successful with deposit', array(
                         'entry_id' => $entry_id,
                         'position' => $position,
                         'order_id' => $order_id
@@ -889,8 +921,9 @@ class StockCartl_Frontend {
                 ));
             } else {
                 // Log deposit creation failure
-                if ($this->debug) {
-                    $this->debug->log_error('Deposit order creation failed', array(
+                $debug = $this->get_debug();
+                if ($debug) {
+                    $debug->log_error('Deposit order creation failed', array(
                         'entry_id' => $entry_id
                     ));
                 }
@@ -898,8 +931,9 @@ class StockCartl_Frontend {
         }
         
         // Log the success
-        if ($this->debug) {
-            $this->debug->log_info('Waitlist join successful', array(
+        $debug = $this->get_debug();
+        if ($debug) {
+            $debug->log_info('Waitlist join successful', array(
                 'entry_id' => $entry_id,
                 'position' => $position
             ));

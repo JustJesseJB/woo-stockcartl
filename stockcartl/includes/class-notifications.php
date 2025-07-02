@@ -31,6 +31,9 @@ class StockCartl_Notifications {
      */
     public function __construct($settings) {
         $this->settings = $settings;
+
+        // Get debug instance
+        $this->debug = $this->get_debug();
         
         // Add scheduled task for processing the notification queue
         add_action('stockcartl_process_notification_queue', array($this, 'process_notification_queue'));
@@ -42,6 +45,27 @@ class StockCartl_Notifications {
         
         // Declare HPOS compatibility
         add_action('before_woocommerce_init', array($this, 'declare_hpos_compatibility'));
+    }
+
+    /**
+     * Get debug instance
+     *
+     * @return StockCartl_Debug|null Debug instance
+     */
+    private function get_debug() {
+        global $stockcartl_debug;
+        
+        // Return global instance if available
+        if (isset($stockcartl_debug) && $stockcartl_debug instanceof StockCartl_Debug) {
+            return $stockcartl_debug;
+        }
+        
+        // Try function if global not available
+        if (function_exists('stockcartl_debug')) {
+            return stockcartl_debug();
+        }
+        
+        return null;
     }
     
     /**
@@ -289,6 +313,16 @@ class StockCartl_Notifications {
     private function queue_notification($type, $recipient, $subject, $message, $scheduled_at = null) {
         global $wpdb;
         
+        // Log the attempt
+        if ($this->debug) {
+            $this->debug->log_info('Queueing notification', array(
+                'type' => $type,
+                'recipient' => $recipient,
+                'subject' => $subject,
+                'scheduled_at' => $scheduled_at ? $scheduled_at : 'immediate'
+            ));
+        }
+        
         // Use current time if not specified
         if (!$scheduled_at) {
             $scheduled_at = current_time('mysql');
@@ -310,11 +344,27 @@ class StockCartl_Notifications {
         // Try sending immediately if inserted successfully
         if ($result) {
             $notification_id = $wpdb->insert_id;
+            
+            if ($this->debug) {
+                $this->debug->log_info('Notification queued successfully', array(
+                    'notification_id' => $notification_id,
+                    'type' => $type
+                ));
+            }
+            
             $this->process_notification($notification_id);
             return true;
+        } else {
+            if ($this->debug) {
+                $this->debug->log_error('Failed to queue notification', array(
+                    'error' => $wpdb->last_error,
+                    'type' => $type,
+                    'recipient' => $recipient
+                ));
+            }
+            
+            return false;
         }
-        
-        return false;
     }
     
     /**
@@ -323,6 +373,10 @@ class StockCartl_Notifications {
     public function process_notification_queue() {
         global $wpdb;
         $table = $wpdb->prefix . STOCKCARTL_TABLE_NOTIFICATIONS;
+        
+        if ($this->debug) {
+            $this->debug->log_info('Starting notification queue processing');
+        }
         
         // Get pending notifications scheduled for now or earlier
         $notifications = $wpdb->get_results($wpdb->prepare(
@@ -334,12 +388,36 @@ class StockCartl_Notifications {
             current_time('mysql')
         ));
         
+        $count = count($notifications);
+        
+        if ($this->debug) {
+            $this->debug->log_info('Found notifications to process', array(
+                'count' => $count
+            ));
+        }
+        
         if (empty($notifications)) {
             return;
         }
         
+        $success_count = 0;
+        $fail_count = 0;
+        
         foreach ($notifications as $notification) {
-            $this->process_notification($notification->id);
+            $result = $this->process_notification($notification->id);
+            if ($result) {
+                $success_count++;
+            } else {
+                $fail_count++;
+            }
+        }
+        
+        if ($this->debug) {
+            $this->debug->log_info('Notification queue processing completed', array(
+                'total_processed' => $count,
+                'successful' => $success_count,
+                'failed' => $fail_count
+            ));
         }
     }
     
@@ -353,6 +431,12 @@ class StockCartl_Notifications {
         global $wpdb;
         $table = $wpdb->prefix . STOCKCARTL_TABLE_NOTIFICATIONS;
         
+        if ($this->debug) {
+            $this->debug->log_info('Processing notification', array(
+                'notification_id' => $notification_id
+            ));
+        }
+        
         // Get notification data
         $notification = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM $table WHERE id = %d",
@@ -360,11 +444,21 @@ class StockCartl_Notifications {
         ));
         
         if (!$notification) {
+            if ($this->debug) {
+                $this->debug->log_error('Notification not found', array(
+                    'notification_id' => $notification_id
+                ));
+            }
             return false;
         }
         
         // Check if already sent
         if ($notification->status === 'sent') {
+            if ($this->debug) {
+                $this->debug->log_info('Notification already sent', array(
+                    'notification_id' => $notification_id
+                ));
+            }
             return true;
         }
         
@@ -374,6 +468,14 @@ class StockCartl_Notifications {
             array('status' => 'processing'),
             array('id' => $notification_id)
         );
+        
+        if ($this->debug) {
+            $this->debug->log_info('Sending email notification', array(
+                'notification_id' => $notification_id,
+                'type' => $notification->notification_type,
+                'recipient' => $notification->recipient
+            ));
+        }
         
         // Send email
         $headers = array('Content-Type: text/html; charset=UTF-8');
@@ -389,11 +491,30 @@ class StockCartl_Notifications {
                 ),
                 array('id' => $notification_id)
             );
+            
+            if ($this->debug) {
+                $this->debug->log_info('Email notification sent successfully', array(
+                    'notification_id' => $notification_id,
+                    'type' => $notification->notification_type,
+                    'recipient' => $notification->recipient
+                ));
+            }
+            
             return true;
         } else {
             // Increment retry count
             $retry_count = (int) $notification->retry_count + 1;
             $max_retries = 3;
+            
+            if ($this->debug) {
+                $this->debug->log_error('Failed to send email notification', array(
+                    'notification_id' => $notification_id,
+                    'type' => $notification->notification_type,
+                    'recipient' => $notification->recipient,
+                    'retry_count' => $retry_count,
+                    'max_retries' => $max_retries
+                ));
+            }
             
             if ($retry_count >= $max_retries) {
                 // Mark as failed after max retries
@@ -406,17 +527,38 @@ class StockCartl_Notifications {
                     ),
                     array('id' => $notification_id)
                 );
+                
+                if ($this->debug) {
+                    $this->debug->log_error('Notification marked as failed after max retries', array(
+                        'notification_id' => $notification_id,
+                        'type' => $notification->notification_type,
+                        'recipient' => $notification->recipient,
+                        'retry_count' => $retry_count
+                    ));
+                }
             } else {
                 // Schedule for retry
+                $retry_time = date('Y-m-d H:i:s', strtotime('+1 hour')); // Retry in 1 hour
+                
                 $wpdb->update(
                     $table,
                     array(
                         'status' => 'pending',
                         'retry_count' => $retry_count,
-                        'scheduled_at' => date('Y-m-d H:i:s', strtotime('+1 hour')) // Retry in 1 hour
+                        'scheduled_at' => $retry_time
                     ),
                     array('id' => $notification_id)
                 );
+                
+                if ($this->debug) {
+                    $this->debug->log_info('Notification scheduled for retry', array(
+                        'notification_id' => $notification_id,
+                        'type' => $notification->notification_type,
+                        'recipient' => $notification->recipient,
+                        'retry_count' => $retry_count,
+                        'retry_at' => $retry_time
+                    ));
+                }
             }
             
             return false;
