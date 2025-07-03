@@ -62,6 +62,9 @@ stockcartl/
 
 ## 📝 Changelog
 
+### v1.1.3 - July 3, 2025
+- Fixed: Debug log functionality
+
 ### v1.1.2 - July 3, 2025
 - Added: Comprehensive debugging system for improved troubleshooting
 - Enhanced: Error logging for critical operations

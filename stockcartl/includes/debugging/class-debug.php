@@ -168,9 +168,23 @@ class StockCartl_Debug {
         $this->log_file = $this->log_dir . '/stockcartl-debug.log';
 
         // Set debug mode from settings
-        if ($this->settings) {
-            $debug_option = $this->settings->get('debug_mode', self::MODE_NONE);
-            $this->debug_mode = intval($debug_option);
+        $this->debug_mode = self::MODE_NONE; // Default to disabled
+
+        // Check if we have settings
+        if ( $this->settings ) {
+            $debug_option = $this->settings->get( 'debug_mode', self::MODE_NONE );
+            $this->debug_mode = intval( $debug_option );
+        } else {
+            // Settings not initialized yet – fall back to DB option
+            $saved_options = get_option( 'stockcartl_settings', array() );
+            $this->debug_mode = isset( $saved_options['debug_mode'] )
+                ? intval( $saved_options['debug_mode'] )
+                : self::MODE_NONE;
+        }
+
+        // Check for forced debug mode constant
+        if ( defined( 'STOCKCARTL_DEBUG_MODE' ) ) {
+            $this->debug_mode = intval( STOCKCARTL_DEBUG_MODE );
         }
 
         // Initialize license

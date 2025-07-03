@@ -11,7 +11,7 @@
  * Plugin Name:       StockCartl
  * Plugin URI:        https://stockcartl.com
  * Description:       Transform "Out of Stock" into revenue opportunities with intelligent waitlist management, deposit priority systems, and social proof features.
- * Version:           1.1.2
+ * Version:           1.1.3
  * Requires at least: 5.0
  * Requires PHP:      7.4
  * Author:            Amplified Plugins
@@ -30,7 +30,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('STOCKCARTL_VERSION', '1.1.2');
+define('STOCKCARTL_VERSION', '1.1.3');
 define('STOCKCARTL_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('STOCKCARTL_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('STOCKCARTL_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -127,7 +127,11 @@ register_deactivation_hook(__FILE__, 'stockcartl_deactivate');
 /**
  * Development mode flag - set to true to enable all features during development
  */
-define('STOCKCARTL_DEV_MODE', true);
+define('STOCKCARTL_DEV_MODE', false);
+// If we’re in Dev Mode, force the debug logger into ADVANCED mode
+if ( defined('STOCKCARTL_DEV_MODE') && STOCKCARTL_DEV_MODE ) {
+    define('STOCKCARTL_DEBUG_MODE', 2 ); // 2 == StockCartl_Debug::MODE_ADVANCED
+}
 
 /**
  * Load debugging system
@@ -137,26 +141,6 @@ function stockcartl_load_debugging() {
     require_once STOCKCARTL_PLUGIN_DIR . 'includes/debugging/class-debug.php';
     require_once STOCKCARTL_PLUGIN_DIR . 'includes/debugging/class-debug-logs.php';
     
-    // Initialize the global debug instance
-    global $stockcartl_debug;
-    $stockcartl_debug = StockCartl_Debug::get_instance();
-    
-    // Add a dedicated helper function that's easier to use
-    if (!function_exists('stockcartl_debug')) {
-        function stockcartl_debug() {
-            global $stockcartl_debug;
-            return $stockcartl_debug;
-        }
-    }
-    
-    // Log plugin initialization
-    if ($stockcartl_debug) {
-        $stockcartl_debug->log_info('StockCartl plugin initialized', array(
-            'version' => STOCKCARTL_VERSION,
-            'wp_version' => get_bloginfo('version'),
-            'php_version' => phpversion()
-        ));
-    }
 }
 add_action('plugins_loaded', 'stockcartl_load_debugging', 1);
 

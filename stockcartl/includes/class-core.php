@@ -123,10 +123,6 @@ class StockCartl_Core {
 
         require_once STOCKCARTL_PLUGIN_DIR . 'includes/class-notifications.php';
         $this->notifications = new StockCartl_Notifications($this->settings);
-
-        // Add AJAX handler
-        add_action('wp_ajax_stockcartl_join_waitlist', array($this, 'ajax_join_waitlist'));
-        add_action('wp_ajax_nopriv_stockcartl_join_waitlist', array($this, 'ajax_join_waitlist'));
         
         // Declare HPOS compatibility
         add_action('before_woocommerce_init', array($this, 'declare_hpos_compatibility'));
